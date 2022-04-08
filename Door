@@ -11,8 +11,8 @@ public class Door : MonoBehaviour
     {
         if (door.TryGetComponent<Thief>(out Thief player))
         {
-           _siren.ChangeVolume(maxData);
            _siren.SirenPlay();
+           _siren.ChangeVolume(maxData);
         }
     }
 
