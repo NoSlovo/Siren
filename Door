@@ -1,15 +1,17 @@
 using UnityEngine;
 
-
 public class Door : MonoBehaviour
 {
     [SerializeField] private Siren _siren;
-    
+
+    private float minVolume = 0;
+    private float maxData = 1f;
+
     private void OnTriggerEnter(Collider door)
     {
         if (door.TryGetComponent<Thief>(out Thief player))
         {
-           _siren.ChangeVolume(1);
+           _siren.ChangeVolume(maxData);
            _siren.SirenPlay();
         }
     }
@@ -18,7 +20,7 @@ public class Door : MonoBehaviour
     {
         if (door.TryGetComponent<Thief>(out Thief player))
         {
-            _siren.ChangeVolume(0);
+            _siren.ChangeVolume(minVolume);
         }
     }
 }
