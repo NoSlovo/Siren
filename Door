@@ -1,26 +1,29 @@
 using UnityEngine;
+using UnityEngine.Events;
+
+[RequireComponent(typeof(Siren))]
 
 public class Door : MonoBehaviour
 {
-    [SerializeField] private Siren _siren;
-
-    private float minVolume = 0;
-    private float maxData = 1f;
+    [SerializeField] UnityEvent _doorIsOpen;
 
     private void OnTriggerEnter(Collider door)
     {
-        if (door.TryGetComponent<Thief>(out Thief player))
+        var thif = door.TryGetComponent<Thief>(out Thief Thief);
+
+        if (thif != null)
         {
-           _siren.SirenPlay();
-           _siren.ChangeVolume(maxData);
+            _doorIsOpen?.Invoke();
         }
     }
 
     private void OnTriggerExit(Collider door)
     {
-        if (door.TryGetComponent<Thief>(out Thief player))
+        var thif = door.TryGetComponent<Thief>(out Thief Thief);
+
+        if (thif != null)
         {
-            _siren.ChangeVolume(minVolume);
+            _doorIsOpen.Invoke();
         }
     }
 }
