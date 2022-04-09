@@ -23,7 +23,6 @@ public class Siren : MonoBehaviour
             }
             _pushController = null;
         }
-
     }
 
     private void Awake()
