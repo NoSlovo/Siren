@@ -1,0 +1,140 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(SpriteRenderer))]
+
+public class Controller : MonoBehaviour
+{
+    [SerializeField] private Vector2 Velocity;
+    [SerializeField] private LayerMask LayerMask;
+    [SerializeField] private Animator _animator;
+    [SerializeField] private SpawnPoint _spawnPoint;
+
+    protected Vector2 targetVelocity;
+    protected bool grounded;
+    protected Vector2 graundNoraml;
+    protected Rigidbody2D rb2d;
+    protected ContactFilter2D contactFilter;
+    protected RaycastHit2D[] hitBuffer = new RaycastHit2D[16];
+    protected List<RaycastHit2D> hitBufferList = new List<RaycastHit2D>();
+    protected float minMoveDistance = 0.001f;
+    protected float shellRadius = 0.01f;
+
+    private float _gravityModifier = 1f;
+    private float _minGroundNormalyY = .65f;
+    private SpriteRenderer _spriteRenderer;
+    private float _speed = 6.5f;
+    private int _purse;
+
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.TryGetComponent(out Coin coin))
+        {
+            _purse += 1;
+            Destroy(coin.gameObject);
+        }
+    }
+
+    private void OnEnable()
+    {
+        rb2d = GetComponent<Rigidbody2D>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        _spawnPoint = GetComponent<SpawnPoint>();
+    }
+
+    private void Start()
+    {
+        contactFilter.useTriggers = false;
+        contactFilter.SetLayerMask(LayerMask);
+        contactFilter.useLayerMask = true;
+    }
+
+    private void Update()
+    {
+        targetVelocity = new Vector2(Input.GetAxis("Horizontal"),0);
+
+        if (Input.GetKey(KeyCode.Space) && grounded)
+        {
+            Velocity.y = 5;
+            _animator.Play("Jump");
+        }
+
+        if (Input.GetKey(KeyCode.A))
+        {
+            _animator.Play("Move");
+            _spriteRenderer.flipX = true;
+        }
+        else if (Input.GetKey(KeyCode.D))
+        {
+            _animator.Play("Move");
+            _spriteRenderer.flipX = false;
+        }
+        else
+        {
+            _animator.Play("idle");
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        Velocity += _gravityModifier * Physics2D.gravity * Time.deltaTime;
+        Velocity.x = targetVelocity.x ;
+
+        grounded = false;
+
+        Vector2 deltaPosition = Velocity * Time.deltaTime * _speed;
+        Vector2 moveAlongGround = new Vector2(graundNoraml.y, - graundNoraml.x);
+        Vector2 move = moveAlongGround * deltaPosition.x;
+
+        Movement(move,false);
+
+        move = Vector2.up * deltaPosition.y;
+
+        Movement(move,true);
+    }
+
+    private void Movement(Vector2 move,bool yMovement)
+    {
+        float distance = move.magnitude;
+
+        if (distance > minMoveDistance)
+        {
+            int count = rb2d.Cast(move, contactFilter, hitBuffer, distance + shellRadius);
+            hitBufferList.Clear();
+
+            for(int i = 0; i < count; i++)
+            {
+                hitBufferList.Add(hitBuffer[i]);
+            }
+
+            for(int i = 0; i < hitBufferList.Count; i++)
+            {
+                Vector2 currentNormal = hitBufferList[i].normal;
+
+                if (currentNormal.y > _minGroundNormalyY)
+                {
+                    grounded = true;
+                    if (yMovement)
+                    {
+                        graundNoraml = currentNormal;
+                        currentNormal.x = 0;
+                    }
+                }
+
+                float projection = Vector2.Dot(Velocity, currentNormal);
+                
+                if(projection < 0)
+                {
+                    Velocity = Velocity - projection * currentNormal;
+                }
+                
+                float modifiedDistance = hitBufferList[i].distance - shellRadius;
+                distance = modifiedDistance < distance ? modifiedDistance : distance;
+            }  
+        }
+        rb2d.position = rb2d.position + move.normalized * distance;
+    }
+}
